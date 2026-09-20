@@ -10,6 +10,7 @@ const REQUESTS_SHEET = 'Requests';
 const MEMBERS_SHEET = 'Members';
 const HASH_ROUNDS = 1000; // simple stretching - Apps Script has no native slow-hash function
 const RESET_TTL_MINUTES = 30;
+const CONTACT_EMAIL = 'contact@islandlakeassociation.ca';
 
 function getAdminEmail() {
   return PropertiesService.getScriptProperties().getProperty('ADMIN_EMAIL') || Session.getEffectiveUser().getEmail();
@@ -74,6 +75,7 @@ function doPost(e) {
       case 'login': return handleLogin(body);
       case 'request_password_reset': return handleRequestPasswordReset(body);
       case 'reset_password': return handleResetPassword(body);
+      case 'contact': return handleContact(body);
       default: return jsonOut({ ok: false, error: 'unknown_action' });
     }
   } catch (err) {
@@ -210,6 +212,26 @@ function handleResetPassword(body) {
     }
   }
   return jsonOut({ ok: false, error: 'invalid' });
+}
+
+function handleContact(body) {
+  const name = (body.name || '').trim();
+  const email = (body.email || '').trim();
+  const phone = (body.phone || '').trim();
+  const message = (body.message || '').trim();
+
+  if (!name || !email || !message) {
+    return jsonOut({ ok: false, error: 'missing_fields' });
+  }
+
+  MailApp.sendEmail({
+    to: CONTACT_EMAIL,
+    replyTo: email,
+    subject: `ILPOA website — message from ${name}`,
+    body: `${name} (${email}${phone ? ', ' + phone : ''}) sent a message through the website contact form:\n\n${message}`
+  });
+
+  return jsonOut({ ok: true });
 }
 
 // ===== Installable trigger =====
